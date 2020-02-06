@@ -13,7 +13,7 @@ const javierIcon = 'http://www.conservationgis.org/scgis/2016/PAPERS_PIX/JavierA
 let map;
 
 $('document').ready(() => {
-  map = L.map('main-map').setView([35.81, -79.05], 15);
+  map = L.map('main-map').setView([35.913012, -79.049859], 15);
 
   L.tileLayer(baseMapString).addTo(map);
 
