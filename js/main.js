@@ -1,4 +1,5 @@
-const baseMapString = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
+const baseMapString = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}';
+const darkBaseMapString = 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 
 const oldWellData = {
   icon: 'http://pluspng.com/img-png/a-well-png--466.png',
@@ -12,47 +13,42 @@ const javierIcon = 'http://www.conservationgis.org/scgis/2016/PAPERS_PIX/JavierA
 
 let map;
 
+let options =
+  ['American Airlines',
+    'Southwest Airlines',
+    'Delta Air Lines',
+    'JetBlue Airways',
+    'United Airlines',
+    'all others'];
+let selected = [options[0], options[1], options[2]];
+
 $('document').ready(() => {
-  map = L.map('main-map').setView([35.913012, -79.049859], 15);
-
-  L.tileLayer(baseMapString).addTo(map);
-
-  // create custom icon variable
-  const wellIcon = L.icon({
-    iconUrl: oldWellData.icon,
-    iconSize: [50, 50],
-    popupAnchor: [0, 0]
+  $('body').on('click', '.airline-names', handleClick);
+  options.forEach(name => {
+    $('#select-box').append(`<p class="caps airline-names ${selected.includes(name) ? 'selected' : ''}">
+      ${name}
+    </p>`)
   });
 
-  L.geoJSON(oldWell, {
-    pointToLayer: (feature, latLng) => {
-      return L.marker(latLng, {icon: wellIcon})
-    }
-  }).bindPopup(oldWellData.popup)
-    .addTo(map);
+  loadMap();
+});
 
-  L.geoJSON(floweringCherries, {
-    pointToLayer: (feature, latLng) => {
-      return L.marker(latLng, {
-        icon: L.icon({
-          iconUrl: cherryIcon,
-          iconSize: [40, 40],
-          popupAnchor: [0, 0]
-        })
-      })
-    }
-  }).addTo(map);
+$(window).on('resize', setHeight).trigger('resize');
+
+function setHeight() {
+  const map = $('#main-map');
+  map.height($(window).height());
+}
 
 
-  L.marker([35.911271, -79.049807])
-    .addTo(map)
-    .bindPopup(
-      `<div style="text-align: center">
-          <h2>Javier without a beard</h2>
-          <div><img src="${javierIcon}" width="200px"></div></div>`
-    )
-    .openPopup();
+let airlinesLayer;
 
+function loadMap() {
+  map = L.map('main-map').setView([38.246900, -96.203408], 5);
+
+  L.tileLayer(darkBaseMapString).addTo(map);
+
+  addFlights();
 
   L.control.locate().addTo(map);
 
@@ -61,11 +57,39 @@ $('document').ready(() => {
     setHeight();
     map.invalidateSize(true);
   }, 0)
-});
+}
 
-$(window).on('resize', setHeight).trigger('resize');
+function refreshMap() {
+  map.removeLayer(airlinesLayer);
+  addFlights();
+}
 
-function setHeight() {
-  const map = $('#main-map');
-  map.height($(window).height() - $('header').height() - 150);
+function addFlights() {
+  airlinesLayer = L.geoJSON(worldFlights, {
+    style: {
+      weight: .2,
+      opacity: .75,
+      color: "#e9e9e9",
+    },
+    filter: function (feature) {
+      if (selected.includes('all others')) {
+        return true;
+      } else {
+        return selected.includes(feature.properties.airline)
+      }
+    }
+  }).addTo(map);
+
+}
+
+function handleClick() {
+  let name = $(this).html().trim();
+  if (selected.includes(name)) {
+    selected.splice(selected.indexOf(name), 1);
+    $(this).toggleClass('selected');
+  } else {
+    selected.push(name);
+    $(this).toggleClass('selected');
+  }
+  refreshMap();
 }
